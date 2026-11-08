@@ -6,9 +6,37 @@
 #include <sys/stat.h>
 #include <limits.h>
 
+#define V10_US_SIZE 14383616
+
 static int file_exists(const char *path) {
     struct stat st;
     return (stat(path, &st) == 0);
+}
+
+static off_t file_size(const char *path) {
+    struct stat st;
+    if (stat(path, &st) != 0) return 0;
+    return st.st_size;
+}
+
+static int copy_file(const char *src, const char *dst) {
+    FILE *in = fopen(src, "rb");
+    if (!in) return 0;
+    FILE *out = fopen(dst, "wb");
+    if (!out) { fclose(in); return 0; }
+    char buf[65536];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
+        if (fwrite(buf, 1, n, out) != n) {
+            fclose(in);
+            fclose(out);
+            return 0;
+        }
+    }
+    fclose(in);
+    fclose(out);
+    chmod(dst, 0755);
+    return 1;
 }
 
 int main(int argc, char *argv[]) {
@@ -27,20 +55,14 @@ int main(int argc, char *argv[]) {
 
     // real_exec is ".../Contents/MacOS/macSA"
     char *last_slash = strrchr(real_exec, '/');
-    if (!last_slash) {
-        fprintf(stderr, "macSA: Invalid executable path format.\n");
-        return 1;
-    }
+    if (!last_slash) return 1;
     *last_slash = '\0'; // real_exec is now ".../Contents/MacOS"
 
     char contents_dir[PATH_MAX];
     strncpy(contents_dir, real_exec, sizeof(contents_dir) - 1);
     contents_dir[sizeof(contents_dir) - 1] = '\0';
     char *c_slash = strrchr(contents_dir, '/');
-    if (!c_slash) {
-        fprintf(stderr, "macSA: Invalid Contents directory format.\n");
-        return 1;
-    }
+    if (!c_slash) return 1;
     *c_slash = '\0'; // contents_dir is now ".../Contents"
 
     char runtime_path[PATH_MAX];
@@ -49,16 +71,30 @@ int main(int argc, char *argv[]) {
     char gamedata_path[PATH_MAX];
     snprintf(gamedata_path, sizeof(gamedata_path), "%s/Resources/GameData", contents_dir);
 
-    char exe1[PATH_MAX], exe2[PATH_MAX], exe3[PATH_MAX], img1[PATH_MAX];
+    char v10us_patch[PATH_MAX];
+    snprintf(v10us_patch, sizeof(v10us_patch), "%s/Resources/gta_sa_v10us.exe", contents_dir);
+
+    char exe1[PATH_MAX], img1[PATH_MAX];
     snprintf(exe1, sizeof(exe1), "%s/gta_sa.exe", gamedata_path);
-    snprintf(exe2, sizeof(exe2), "%s/gta-sa.exe", gamedata_path);
-    snprintf(exe3, sizeof(exe3), "%s/GTA_SA.EXE", gamedata_path);
     snprintf(img1, sizeof(img1), "%s/models/gta3.img", gamedata_path);
 
-    int has_baked_game = file_exists(exe1) || file_exists(exe2) || file_exists(exe3) || file_exists(img1);
+    int has_baked_game = file_exists(exe1) || file_exists(img1);
 
-    // Case 1: Game files are baked into Contents/Resources/GameData (standard install)
+    // If game files are baked into Contents/Resources/GameData
     if (has_baked_game) {
+        // Auto-fix: Ensure gta_sa.exe is the clean v1.0 US executable if a patch is available
+        if (file_exists(v10us_patch)) {
+            off_t current_size = file_size(exe1);
+            if (current_size != V10_US_SIZE) {
+                char backup_exe[PATH_MAX];
+                snprintf(backup_exe, sizeof(backup_exe), "%s/gta_sa.exe.original", gamedata_path);
+                if (!file_exists(backup_exe) && file_exists(exe1)) {
+                    rename(exe1, backup_exe);
+                }
+                copy_file(v10us_patch, exe1);
+            }
+        }
+
         chdir(gamedata_path);
 
         // If extra arguments were provided via CLI (excluding macOS Finder's -psn)
@@ -93,7 +129,6 @@ int main(int argc, char *argv[]) {
     }
 
     // Case 3: Empty template app opened directly.
-    // Launch SaifRuntime without arguments to show the interactive GUI folder selector.
     char *fallback_argv[] = { runtime_path, NULL };
     execv(runtime_path, fallback_argv);
     perror("macSA: Failed to launch SaifRuntime fallback");

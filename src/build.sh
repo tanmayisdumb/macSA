@@ -16,14 +16,13 @@ APP_DIR="$ROOT_DIR/macSA.app"
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS"
 mkdir -p "$APP_DIR/Contents/Resources/GameData"
-mkdir -p "$APP_DIR/Contents/Frameworks"
 
 # 3. Copy launcher and runtime
 echo "--> Installing binaries..."
 cp "$SCRIPT_DIR/macSA" "$APP_DIR/Contents/MacOS/macSA"
 
 # Use cached or downloaded Saif runtime
-SAIF_BIN="/tmp/saif_inspect/Saif.app/Contents/MacOS/Saif"
+SAIF_BIN="/tmp/saif_download/Saif.app/Contents/MacOS/Saif"
 if [ ! -f "$SAIF_BIN" ]; then
     echo "Downloading Saif runtime..."
     mkdir -p /tmp/saif_download
@@ -35,11 +34,10 @@ fi
 cp "$SAIF_BIN" "$APP_DIR/Contents/MacOS/SaifRuntime"
 chmod +x "$APP_DIR/Contents/MacOS/macSA" "$APP_DIR/Contents/MacOS/SaifRuntime"
 
-# 4. Copy Frameworks
-if [ -d "/tmp/saif_inspect/Saif.app/Contents/Frameworks/Sparkle.framework" ]; then
-    cp -R "/tmp/saif_inspect/Saif.app/Contents/Frameworks/Sparkle.framework" "$APP_DIR/Contents/Frameworks/"
-elif [ -d "/tmp/saif_download/Saif.app/Contents/Frameworks/Sparkle.framework" ]; then
-    cp -R "/tmp/saif_download/Saif.app/Contents/Frameworks/Sparkle.framework" "$APP_DIR/Contents/Frameworks/"
+# 4. Copy v1.0 US compatibility executable
+if [ -f "$SCRIPT_DIR/gta_sa_v10us.exe" ]; then
+    echo "--> Bundling v1.0 US compatibility executable..."
+    cp "$SCRIPT_DIR/gta_sa_v10us.exe" "$APP_DIR/Contents/Resources/gta_sa_v10us.exe"
 fi
 
 # 5. Build authentic icon if not present
@@ -112,12 +110,10 @@ PLIST
 # 7. Create PkgInfo
 printf "APPL????" > "$APP_DIR/Contents/PkgInfo"
 
-# 8. Sign the bundle ad-hoc
-echo "--> Signing macSA.app bundle..."
+# 8. Clean dot files & sign bundle ad-hoc
+echo "--> Cleaning metadata & signing macSA.app bundle..."
+find "$APP_DIR" -name "._*" -delete 2>/dev/null || true
 xattr -cr "$APP_DIR" 2>/dev/null || true
-if [ -d "$APP_DIR/Contents/Frameworks/Sparkle.framework" ]; then
-    codesign --force --sign - "$APP_DIR/Contents/Frameworks/Sparkle.framework" 2>/dev/null || true
-fi
 codesign --force --sign - "$APP_DIR/Contents/MacOS/SaifRuntime"
 codesign --force --sign - "$APP_DIR/Contents/MacOS/macSA"
 codesign --force --sign - "$APP_DIR"

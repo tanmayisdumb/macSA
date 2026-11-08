@@ -24,6 +24,7 @@ DL="$HOME/Downloads"
 APP_NAME="Grand Theft Auto San Andreas"
 VOLNAME="$APP_NAME"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
+V10_US_SIZE=14383616
 
 STEAM_SRCS=(
 	"$HOME/Library/Application Support/Steam/steamapps/common/Grand Theft Auto San Andreas/Grand Theft Auto - San Andreas.app/Contents/Resources/transgaming/c_drive/Program Files/Rockstar Games/Grand Theft Auto San Andreas"
@@ -240,9 +241,8 @@ resolve_game_dir() {
 # Check existing installs for upgrades
 EXISTING_SRC=""
 EXISTING_APP=""
-for app in "/Applications/$APP_NAME.app" "$HOME/Applications/$APP_NAME.app" "$DL/$APP_NAME.app" \
-           "/Applications/macSA.app"     "$HOME/Applications/macSA.app"     "$DL/macSA.app" \
-           "/Applications/Saif.app"      "$HOME/Applications/Saif.app"      "$DL/Saif.app"; do
+for app in "/Applications/$APP_NAME.app" "$HOME/Applications/$APP_NAME.app" \
+           "/Applications/macSA.app"     "$HOME/Applications/macSA.app"; do
 	if [ -d "$app/Contents/Resources/GameData" ] && ( [ -f "$app/Contents/Resources/GameData/models/gta3.img" ] || [ -f "$app/Contents/Resources/GameData/gta_sa.exe" ] ); then
 		EXISTING_SRC="$app/Contents/Resources/GameData"
 		EXISTING_APP="$app"
@@ -274,6 +274,8 @@ else
 	if [ -z "$ASSET_SRC" ]; then
 		for cand in "$DL"/*; do
 			[ -e "$cand" ] || continue
+			# Skip the target app bundle itself during search
+			[ "$(basename "$cand")" = "$APP_NAME.app" ] && continue
 			c_lower="$(basename "$cand" | tr '[:upper:]' '[:lower:]')"
 			case "$c_lower" in
 				*san*andreas*|*gtasa*|*gta*sa*)
@@ -288,7 +290,7 @@ else
 
 	if [ -z "$ASSET_SRC" ]; then
 		die "GTA: San Andreas game files not found" \
-			"macSA requires your original GTA: San Andreas PC game files (v1.0 US)." \
+			"macSA requires your original GTA: San Andreas PC game files." \
 			"You can point the installer directly to your game folder or wrapper:" \
 			"  $0 /path/to/SanAndreas" \
 			"or drop a copy into ~/Downloads with \"San Andreas\" in its name."
@@ -348,7 +350,15 @@ else
 	bake_files
 fi
 
-# Ensure executable permissions inside GameData if needed
+# Compatibility check: ensure gta_sa.exe is the clean v1.0 US build
+CUR_EXE_SIZE=$(file_bytes "$GDATA/gta_sa.exe")
+V10_PATCH="$APP/Contents/Resources/gta_sa_v10us.exe"
+if [ "$CUR_EXE_SIZE" -ne "$V10_US_SIZE" ] && [ -f "$V10_PATCH" ]; then
+	ok "Applying clean v1.0 US executable patch (required for Metal runtime & mods)"
+	[ -f "$GDATA/gta_sa.exe" ] && mv "$GDATA/gta_sa.exe" "$GDATA/gta_sa.exe.original"
+	cp "$V10_PATCH" "$GDATA/gta_sa.exe"
+fi
+
 [ -f "$GDATA/gta_sa.exe" ] && chmod +x "$GDATA/gta_sa.exe" || true
 
 # ---------------------------------------------------------------------------
@@ -357,12 +367,13 @@ fi
 step "Ad-hoc signing the app bundle"
 
 sign_bundle() {
+	find "$APP" -name "._*" -delete 2>/dev/null || true
 	xattr -cr "$APP" 2>/dev/null || true
 
-	# Check if native codesign works
+	# Native codesign
 	if codesign --force --sign - "$APP/Contents/MacOS/SaifRuntime" 2>/dev/null && \
 	   codesign --force --sign - "$APP/Contents/MacOS/macSA" 2>/dev/null && \
-	   codesign --force --deep --sign - "$APP" 2>/dev/null; then
+	   codesign --force --sign - "$APP" 2>/dev/null; then
 		return 0
 	fi
 
@@ -380,11 +391,6 @@ sign_bundle() {
 	local BUNDLE_ID
 	BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
 		"$APP/Contents/Info.plist" 2>/dev/null || echo "com.github.gtamac.macSA")"
-
-	for lib in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/*.framework/*; do
-		[ -f "$lib" ] || continue
-		"$LDID" -Cadhoc -S "$lib" 2>/dev/null || true
-	done
 
 	"$LDID" -Cadhoc -S "$APP/Contents/MacOS/SaifRuntime" || return 1
 	"$LDID" -Cadhoc -I"$BUNDLE_ID" -S "$APP/Contents/MacOS/macSA" || return 1
