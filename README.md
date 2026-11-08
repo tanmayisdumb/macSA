@@ -14,33 +14,6 @@ This repository hosts the **launcher, installer, and build tools only** — ther
 
 ---
 
-## 🌟 Credits & Acknowledgements
-
-This project stands on the shoulders of brilliant developers across the open-source and GTA reverse-engineering communities. Full credit and gratitude go to:
-
-* **[macVC](https://github.com/gtamac/macVC) by [gtamac](https://github.com/gtamac)**  
-  The direct inspiration and architectural blueprint for this project. Their groundbreaking work bringing GTA Vice City to Apple Silicon with Metal rendering, Retina resolutions, and elegant single-line installation showed what native classic GTA on modern macOS should look like.
-
-* **[saif-runtime](https://github.com/saif-runtime/saif-runtime)**  
-  The Apple Silicon ARM64 Metal runtime & translation layer that executes GTA San Andreas natively on Apple Silicon with direct DirectX-to-Metal command translation and shader pipeline generation.
-
-* **[GTA-reversed](https://github.com/gta-reversed/gta-reversed)**  
-  The community initiative dedicated to reverse-engineering, documenting, and reimplementing Grand Theft Auto: San Andreas (1.0 US) in clean C++. Their documented variable offsets and engine mechanics made resolving resolution enumerations and settings parsing possible.
-
-* **[plugin-sdk](https://github.com/DK22Pac/plugin-sdk) by DK22Pac and contributors**  
-  The definitive C++ SDK and mapped memory structures for the classic 3D-era Grand Theft Auto games, providing critical documentation of `CMenuManager`, `CControllerConfigManager`, and display mode structures.
-
-* **[re3 / reVC](https://github.com/halfc/re3)**  
-  The legendary reverse-engineering project that paved the way for modern source ports of GTA III and Vice City.
-
-* **[Procursus Team (ldid)](https://github.com/ProcursusTeam/ldid)**  
-  The ad-hoc codesigning utility used to sign macOS application bundles directly from the terminal without requiring Xcode or Command Line Tools.
-
-* **[Rockstar Games](https://www.rockstargames.com/) / [Take-Two Interactive](https://www.take2games.com/)**  
-  The creators of the original 2004 Grand Theft Auto: San Andreas masterpiece.
-
----
-
 ## Quick Install
 
 **You need:** an Apple Silicon Mac (M1, M2, M3, M4 or newer) on macOS 13 (Ventura) or later, and
@@ -157,3 +130,15 @@ cd macSA
 ```
 
 The build script compiles the native C launcher (`src/macSA.c`), sets up the bundle skeleton, embeds the icon and compatibility binaries, cleans AppleDouble metadata, ad-hoc codesigns the bundle, and outputs `macSA-macos-arm64.tar.gz` and `macSA-macos-arm64.zip`.
+
+---
+
+## Credits
+
+- **[macVC](https://github.com/gtamac/macVC)** by [gtamac](https://github.com/gtamac) — Project inspiration & architecture
+- **[saif-runtime](https://github.com/saif-runtime/saif-runtime)** — Apple Silicon Metal runtime & DirectX translation
+- **[GTA-reversed](https://github.com/gta-reversed/gta-reversed)** — GTA San Andreas reverse-engineering research
+- **[plugin-sdk](https://github.com/DK22Pac/plugin-sdk)** by DK22Pac — C++ structures & engine offsets
+- **[re3 / reVC](https://github.com/halfc/re3)** — Foundational 3D-era GTA reverse-engineering
+- **[Procursus (ldid)](https://github.com/ProcursusTeam/ldid)** — Ad-hoc bundle codesigning
+- **[Rockstar Games](https://www.rockstargames.com/)** — Original creators of Grand Theft Auto: San Andreas
