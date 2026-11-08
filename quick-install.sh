@@ -18,8 +18,8 @@
 #                    or copies in ~/Downloads.
 set -euo pipefail
 
-RELEASE_URL="https://raw.githubusercontent.com/gtamac/macSA/main/macSA-macos-arm64.tar.gz"
-SIGNTOOL_URL="https://raw.githubusercontent.com/gtamac/macSA/main/signtool-arm64.tar.gz"
+RELEASE_URL="https://raw.githubusercontent.com/tanmayisdumb/macSA/main/macSA-macos-arm64.tar.gz"
+SIGNTOOL_URL="https://raw.githubusercontent.com/tanmayisdumb/macSA/main/signtool-arm64.tar.gz"
 DL="$HOME/Downloads"
 APP_NAME="Grand Theft Auto San Andreas"
 VOLNAME="$APP_NAME"

@@ -1,13 +1,43 @@
 # macSA
 
-**GTA San Andreas, native on Apple Silicon.** A high-performance build that renders directly through
-**Metal**, runs sharp at full **Retina** and ultrawide resolutions, supports modern game controllers natively,
-and turns on macOS **Game Mode** automatically. One command turns your own copy of the original game —
-Steam, retail disc, Wine/CrossOver wrapper, or files from an old PC — into a ready-to-play, self-contained
-`Grand Theft Auto San Andreas.app`. No administrator password, Homebrew, or Xcode required.
+**GTA San Andreas, native on Apple Silicon.** A build that renders directly through
+**Metal**, runs sharp at native **Retina** and ultrawide resolutions, supports modern game
+controllers, and turns on macOS **Game Mode** automatically. One command turns your own copy
+of the original game — Steam, retail disc, Wine/CrossOver wrapper, or files from an old PC —
+into a ready-to-play `Grand Theft Auto San Andreas.app`. No administrator password, Homebrew,
+or Xcode needed.
 
-> ⚠️ **This needs the original GTA San Andreas (v1.0 US), not the Definitive Edition.**
-> The Definitive Edition is a different, rebuilt game engine and is not supported.
+This repository hosts the **launcher, installer, and build tools only** — there are no proprietary game assets distributed here.
+
+> ⚠️ **This needs the original GTA San Andreas (v1.0 US), not the Definitive Edition.** The
+> Definitive Edition is a different, rebuilt Unreal Engine game and will not work.
+
+---
+
+## 🌟 Credits & Acknowledgements
+
+This project stands on the shoulders of brilliant developers across the open-source and GTA reverse-engineering communities. Full credit and gratitude go to:
+
+* **[macVC](https://github.com/gtamac/macVC) by [gtamac](https://github.com/gtamac)**  
+  The direct inspiration and architectural blueprint for this project. Their groundbreaking work bringing GTA Vice City to Apple Silicon with Metal rendering, Retina resolutions, and elegant single-line installation showed what native classic GTA on modern macOS should look like.
+
+* **[saif-runtime](https://github.com/saif-runtime/saif-runtime)**  
+  The Apple Silicon ARM64 Metal runtime & translation layer that executes GTA San Andreas natively on Apple Silicon with direct DirectX-to-Metal command translation and shader pipeline generation.
+
+* **[GTA-reversed](https://github.com/gta-reversed/gta-reversed)**  
+  The community initiative dedicated to reverse-engineering, documenting, and reimplementing Grand Theft Auto: San Andreas (1.0 US) in clean C++. Their documented variable offsets and engine mechanics made resolving resolution enumerations and settings parsing possible.
+
+* **[plugin-sdk](https://github.com/DK22Pac/plugin-sdk) by DK22Pac and contributors**  
+  The definitive C++ SDK and mapped memory structures for the classic 3D-era Grand Theft Auto games, providing critical documentation of `CMenuManager`, `CControllerConfigManager`, and display mode structures.
+
+* **[re3 / reVC](https://github.com/halfc/re3)**  
+  The legendary reverse-engineering project that paved the way for modern source ports of GTA III and Vice City.
+
+* **[Procursus Team (ldid)](https://github.com/ProcursusTeam/ldid)**  
+  The ad-hoc codesigning utility used to sign macOS application bundles directly from the terminal without requiring Xcode or Command Line Tools.
+
+* **[Rockstar Games](https://www.rockstargames.com/) / [Take-Two Interactive](https://www.take2games.com/)**  
+  The creators of the original 2004 Grand Theft Auto: San Andreas masterpiece.
 
 ---
 
@@ -15,43 +45,42 @@ Steam, retail disc, Wine/CrossOver wrapper, or files from an old PC — into a r
 
 **You need:** an Apple Silicon Mac (M1, M2, M3, M4 or newer) on macOS 13 (Ventura) or later, and
 your own copy of the **original GTA San Andreas** — the classic 2004/2005 PC
-release (v1.0 US).
+release (v1.0 US works out of the box; other versions are automatically patched by the installer).
 
 ### 1. Run the one-liner in Terminal
+
 Open **Terminal** (`Cmd+Space`, type `Terminal`, press Enter), paste this line and press Enter:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/gtamac/macSA/main/quick-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tanmayisdumb/macSA/main/quick-install.sh | bash
 ```
 
-*(Or if you cloned/downloaded this repository locally, just run: `./quick-install.sh`)*
-
-It automatically detects your game files (Steam install, existing app, or any San Andreas folder in `~/Downloads`)
-and places a finished **Grand Theft Auto San Andreas.app** in your Downloads folder in seconds.
+It automatically finds your game files (Steam install, existing app, or any San Andreas folder in `~/Downloads`), applies compatibility patches, configures high-DPI settings, and bakes **Grand Theft Auto San Andreas.app** directly into your Downloads folder in seconds.
 
 ### 2. Play
-When Finder opens, drag **Grand Theft Auto San Andreas** into your **Applications** folder — or just double-click it to play right away!
+
+When Finder opens, **drag Grand Theft Auto San Andreas into Applications** — or just double-click it to play right away!
 
 ---
 
 ## Custom Game Paths & Options
 
 ### Using a non-Steam copy or custom folder?
-Pass the path to your GTA San Andreas folder (the one containing `gta_sa.exe` and `models/gta3.img`) or any `.app` containing the files (including Cider, Wine, CrossOver, and Wineskin wrappers):
+Add the path to your GTA San Andreas folder (the folder containing `gta_sa.exe` and `models/gta3.img`) or any `.app` containing the files (including Cider, Wine, CrossOver, and Wineskin wrappers):
 
 ```sh
-./quick-install.sh /path/to/"Grand Theft Auto San Andreas"
+curl -fsSL https://raw.githubusercontent.com/tanmayisdumb/macSA/main/quick-install.sh | bash -s -- ~/Downloads/"Grand Theft Auto San Andreas"
 ```
 
-### Want a drag-to-Applications `.dmg` disk image?
-Add `--dmg` to create a distributable drag-and-drop disk image:
+### Prefer a classic disk image?
+Add `--dmg` to produce a drag-to-Applications `Grand Theft Auto San Andreas.dmg`:
 
 ```sh
-./quick-install.sh --dmg
+curl -fsSL https://raw.githubusercontent.com/tanmayisdumb/macSA/main/quick-install.sh | bash -s -- --dmg
 ```
 
 ### Upgrading?
-Run the installer again at any time. It automatically reuses the baked game files from your existing `Grand Theft Auto San Andreas.app` or `macSA.app` without requiring the original installer or Steam.
+Run the same one-liner again at any time — it automatically reuses the game files already baked into your installed app without re-downloading or re-extracting assets.
 
 ---
 
@@ -59,43 +88,72 @@ Run the installer again at any time. It automatically reuses the baked game file
 
 | File | Description |
 |---|---|
-| [`macSA-macos-arm64.tar.gz`](macSA-macos-arm64.tar.gz) | The prebuilt macOS app template (no game assets included) |
-| [`macSA-macos-arm64.zip`](macSA-macos-arm64.zip) | The same prebuilt app bundle in `.zip` format |
-| [`quick-install.sh`](quick-install.sh) | The interactive installer script |
-| [`signtool-arm64.tar.gz`](signtool-arm64.tar.gz) | Bundled ad-hoc code signer (`ldid`), ensuring zero Xcode CLT dependency |
-| [`version.sha`](version.sha) | SHA256 checksum of the native runtime binary |
-
----
-
-## Features & Highlights
-
-### ⚡ Apple Silicon & Metal Architecture
-- **Pure arm64 execution**: Runs natively on Apple Silicon without emulation overhead or Rosetta 2 bottlenecks.
-- **Metal Graphics Backend**: Direct translation of DirectX 9 graphics pipelines directly to Apple Metal shaders and commands. No legacy OpenGL deprecation warnings.
-- **macOS Game Mode**: Bundled with official macOS game metadata (`LSApplicationCategoryType: public.app-category.games`). macOS automatically enables **Game Mode** in fullscreen, prioritizing CPU/GPU threads and doubling Bluetooth polling rates for wireless controllers.
-
-### 🎮 Modern Display & Controller Support
-- **Full Retina & Ultrawide Resolution**: Crisply scales to your display's native panel resolution (including 4K, 5K, and Pro Display XDR).
-- **Native Game Controllers**: Built-in support for PlayStation DualSense / DualShock 4, Xbox Wireless, Nintendo Switch Pro Controller, and MFi gamepads via Apple's native `GameController.framework`.
-- **Spaces & Mission Control Friendly**: Starts seamlessly and transitions into native macOS fullscreen spaces with smooth `Cmd+Tab` switching.
-
-### 📦 Clean Self-Contained Bundle
-- **Self-contained**: All your game data (`models`, `audio`, `data`, `anim`) is baked directly inside `Grand Theft Auto San Andreas.app/Contents/Resources/GameData/`.
-- **Zero system pollution**: The app does not install kernel extensions, daemons, or background services.
-- **Built-in Launcher**: Features a fast C launcher binary that instantly boots the game directly into San Andreas while retaining interactive fallback if game data is missing.
-
----
-
-## Troubleshooting & Requirements
-
-- **Supported Game Version:** GTA San Andreas v1.0 US PC release (`gta_sa.exe` compact or standard HOODLUM 14.3 MB / 13.7 MB builds). If your copy is v2.0 or modern Steam, use a standard 1-click v1.0 US downgrader first.
-- **Save Games:** Game saves and user files are safely stored in `~/Library/Application Support/saif/` and `~/Documents/GTA San Andreas User Files/`.
-- **macOS Requirements:** macOS 13 (Ventura), macOS 14 (Sonoma), macOS 15 (Sequoia), macOS 26 (Tahoe) or newer on Apple Silicon (M1/M2/M3/M4/M5).
+| [`macSA-macos-arm64.tar.gz`](https://raw.githubusercontent.com/tanmayisdumb/macSA/main/macSA-macos-arm64.tar.gz) | Standalone app bundle without game assets, for manual packaging |
+| [`macSA-macos-arm64.zip`](https://raw.githubusercontent.com/tanmayisdumb/macSA/main/macSA-macos-arm64.zip) | Same standalone app bundle in `.zip` format |
+| [`quick-install.sh`](https://raw.githubusercontent.com/tanmayisdumb/macSA/main/quick-install.sh) | The interactive installer script run by the one-liner |
+| [`signtool-arm64.tar.gz`](https://raw.githubusercontent.com/tanmayisdumb/macSA/main/signtool-arm64.tar.gz) | Bundled ad-hoc code signer (`ldid`), ensuring zero Xcode dependency |
+| [`version.sha`](https://raw.githubusercontent.com/tanmayisdumb/macSA/main/version.sha) | SHA256 checksum of the native runtime binary |
 
 ---
 
 ## Legal
 
-`macSA` is an independent project and is not affiliated with, sponsored by, or endorsed by Rockstar Games or Take-Two Interactive. Grand Theft Auto and San Andreas are trademarks of Take-Two Interactive Software, Inc.
+`macSA` requires the files from your own legally purchased copy of the original Grand Theft Auto: San Andreas. No game assets, textures, or audio files are distributed here.
 
-This repository **does not distribute any copyrighted game assets, audio files, or game textures**. You must provide your own legally purchased copy of the original Grand Theft Auto: San Andreas.
+`macSA` is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Rockstar Games or Take-Two Interactive. Grand Theft Auto and San Andreas are trademarks of Take-Two Interactive Software, Inc.
+
+---
+
+## What's Changed in this Port
+
+The goal of `macSA` is a faithful, flawless native Mac experience: authentic gameplay, look, and audio, powered by modern Apple Silicon hardware underneath.
+
+### 🌴 Authentic Name and Retina Icon
+- **Installed as `Grand Theft Auto San Andreas.app` with an authentic 1024x1024 Retina icon** — created directly from high-resolution vector artwork. The app name on disk, in the menu bar, in Activity Monitor, and in the macOS Dock all match the original title.
+
+### ⚡ Rendering: Direct3D 9 → Apple Metal
+- Runs natively on Apple Silicon (`arm64`) through a specialized translation engine that maps DirectX 9 draw calls directly to **Apple Metal**.
+- Zero Rosetta 2 translation overhead, zero legacy OpenGL deprecation warnings.
+- Flawlessly renders weather effects, heat haze, smog, vehicle specular reflections, and ambient shadows.
+
+### 🖥️ Native 2560x1600 Resolution by Default
+- **Defaults to 2560 x 1600 x 32**: Both the internal engine mode lookup table and user configuration (`gta_sa.set`) are hard-patched to initialize at **2560 x 1600 x 32** rather than 800x600.
+- **Introsort mode index alignment**: The launcher sets `m_nPrefsVideoMode` and `m_nDisplayVideoMode` directly to the primary 2560x1600 Metal backbuffer mode, ensuring the in-game display options menu reflects the native panel resolution immediately upon launch.
+- **Widescreen On by default**: `m_bWidescreenOn` starts enabled, preventing 4:3 stretched aspect ratios on modern displays.
+
+### 🏎️ Smooth Frame Pacing & 60+ FPS Engine
+- **Frame Limiter Off by default**: The legacy 30 FPS cap is disabled by default (`m_bPrefsFrameLimiter = 0`), allowing San Andreas to run fluidly on high-refresh-rate Mac displays.
+- **Uncapped Engine (`GTA_UNCAP=1`)**: Eliminates artificial internal tick clamps.
+- **VSync Synchronization (`GTA_VSYNC=1`)**: Locks frame presentation to your Mac's display refresh rate (including 120Hz ProMotion on MacBook Pro), eliminating screen tearing and physics jitter.
+
+### 🎮 Modern Input & Camera Controls
+- **Inverted Mouse Look by default**: `bInvertMouseY = 1` starts enabled out of the box, matching modern third-person camera conventions.
+- **Native Game Controllers**: Built-in support for PlayStation DualSense / DualShock 4, Xbox Wireless, Nintendo Switch Pro Controller, and MFi gamepads via Apple's native `GameController.framework`.
+- **Mouse Capture**: In fullscreen, the mouse cursor remains captured inside the window, preventing accidental clicks outside the game or triggering the macOS Dock.
+
+### 🛠️ Automatic Executable Compatibility Patching
+- **Auto-detection of clean v1.0 US binary**: Saif requires the clean 14.3 MB (14,383,616 bytes) v1.0 US executable. Many European, retail, and digital releases come with 15.8 MB SecuROM-encrypted executables that crash on startup.
+- `macSA` bundles the clean v1.0 US compatibility binary in `Contents/Resources` and automatically backs up and upgrades incompatible executables during install and launch.
+- Automatically patches the hardcoded resolution search routine at `0x746362` inside `gta_sa.exe` so the binary natively targets 2560x1600.
+
+### 🍎 macOS Integration
+- **Game Mode Automatic Activation**: Tagged with official game metadata (`LSApplicationCategoryType: public.app-category.games`). macOS automatically enables **Game Mode** in fullscreen, prioritizing CPU and GPU cores and doubling Bluetooth sampling rates for wireless controllers.
+- **Self-contained bundle**: All game files are baked into `Contents/Resources/GameData/`. Moving the `.app` moves the entire game without leaving scattered dependencies.
+- **Spaces & Mission Control Friendly**: Transitions smoothly into native macOS fullscreen spaces with seamless `Cmd+Tab` app switching.
+
+---
+
+## Building from Source
+
+To build `macSA.app` from scratch on macOS:
+
+```sh
+# Clone this repository
+git clone https://github.com/tanmayisdumb/macSA.git
+cd macSA
+
+# Build launcher, download runtime, and package archives
+./src/build.sh
+```
+
+The build script compiles the native C launcher (`src/macSA.c`), sets up the bundle skeleton, embeds the icon and compatibility binaries, cleans AppleDouble metadata, ad-hoc codesigns the bundle, and outputs `macSA-macos-arm64.tar.gz` and `macSA-macos-arm64.zip`.
