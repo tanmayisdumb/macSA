@@ -39,7 +39,84 @@ static int copy_file(const char *src, const char *dst) {
     return 1;
 }
 
+// Configures default settings in gta_sa.set:
+// - bInvertMouseY = 1 (inverted mouse by default)
+// - m_bPrefsFrameLimiter = 0 (frame limiter off by default)
+// - videoMode = 0 (2560x1600 primary mode)
+// - widescreen = 1 (on)
+static void ensure_default_settings(void) {
+    const char *home = getenv("HOME");
+    if (!home) return;
+
+    char set_dir[PATH_MAX];
+    snprintf(set_dir, sizeof(set_dir),
+             "%s/Library/Application Support/saif/overlay/Users/player/Documents/GTA San Andreas User Files",
+             home);
+
+    char set_file[PATH_MAX];
+    snprintf(set_file, sizeof(set_file), "%s/gta_sa.set", set_dir);
+
+    if (!file_exists(set_file)) return;
+
+    FILE *f = fopen(set_file, "r+b");
+    if (!f) return;
+
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    if (sz >= 2900) {
+        // Read the buffer
+        fseek(f, 0, SEEK_SET);
+        unsigned char *data = (unsigned char *)malloc(sz);
+        if (data && fread(data, 1, sz, f) == (size_t)sz) {
+            // Find marker 'T' (0x54) near the end
+            long t_pos = -1;
+            for (long i = sz - 100; i < sz - 15; i++) {
+                if (data[i] == 0x54) {
+                    t_pos = i;
+                    break;
+                }
+            }
+
+            if (t_pos > 30) {
+                // bInvertMouseY: offset t_pos - 22
+                data[t_pos - 22] = 1;
+
+                // m_bWidescreenOn: offset t_pos + 6
+                data[t_pos + 6] = 1;
+
+                // m_bPrefsFrameLimiter: offset t_pos + 7
+                data[t_pos + 7] = 0;
+
+                // m_nDisplayVideoMode: offset t_pos + 8 (4 bytes)
+                data[t_pos + 8] = 0;
+                data[t_pos + 9] = 0;
+                data[t_pos + 10] = 0;
+                data[t_pos + 11] = 0;
+
+                // Write back
+                fseek(f, 0, SEEK_SET);
+                fwrite(data, 1, sz, f);
+            }
+        }
+        free(data);
+    }
+    fclose(f);
+}
+
 int main(int argc, char *argv[]) {
+    // Apply user defaults
+    // 1. Force 2560x1600 resolution
+    setenv("GTA_FORCE_RES", "2560x1600", 0);
+
+    // 2. Uncap internal 30fps engine cap
+    setenv("GTA_UNCAP", "1", 0);
+
+    // 3. Smooth VSync frame pacing with ProMotion / display refresh rate
+    setenv("GTA_VSYNC", "1", 0);
+
+    // 4. Update gta_sa.set preferences (invert mouse, frame limiter off, etc.)
+    ensure_default_settings();
+
     char exec_path[PATH_MAX];
     uint32_t size = sizeof(exec_path);
     if (_NSGetExecutablePath(exec_path, &size) != 0) {
