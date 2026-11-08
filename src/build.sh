@@ -34,10 +34,15 @@ fi
 cp "$SAIF_BIN" "$APP_DIR/Contents/MacOS/SaifRuntime"
 chmod +x "$APP_DIR/Contents/MacOS/macSA" "$APP_DIR/Contents/MacOS/SaifRuntime"
 
-# 4. Copy v1.0 US compatibility executable
+# 4. Copy v1.0 US compatibility executable and settings template
 if [ -f "$SCRIPT_DIR/gta_sa_v10us.exe" ]; then
     echo "--> Bundling v1.0 US compatibility executable..."
     cp "$SCRIPT_DIR/gta_sa_v10us.exe" "$APP_DIR/Contents/Resources/gta_sa_v10us.exe"
+fi
+
+if [ -f "$SCRIPT_DIR/gta_sa.set" ]; then
+    echo "--> Bundling default settings template..."
+    cp "$SCRIPT_DIR/gta_sa.set" "$APP_DIR/Contents/Resources/gta_sa.set"
 fi
 
 # 5. Build authentic icon if not present

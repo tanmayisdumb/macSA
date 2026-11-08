@@ -361,6 +361,13 @@ fi
 
 [ -f "$GDATA/gta_sa.exe" ] && chmod +x "$GDATA/gta_sa.exe" || true
 
+# Pre-configure user settings (2560x1600 default resolution, inverted mouse, frame limiter off)
+USER_FILES="$HOME/Library/Application Support/saif/overlay/Users/player/Documents/GTA San Andreas User Files"
+mkdir -p "$USER_FILES"
+if [ -f "$APP/Contents/Resources/gta_sa.set" ]; then
+	cp "$APP/Contents/Resources/gta_sa.set" "$USER_FILES/gta_sa.set"
+fi
+
 # ---------------------------------------------------------------------------
 # Step 4: Signing the app
 # ---------------------------------------------------------------------------

@@ -39,12 +39,29 @@ static int copy_file(const char *src, const char *dst) {
     return 1;
 }
 
+static void mkdir_p(const char *path) {
+    char tmp[PATH_MAX];
+    char *p = NULL;
+    snprintf(tmp, sizeof(tmp), "%s", path);
+    size_t len = strlen(tmp);
+    if (len > 0 && tmp[len - 1] == '/') tmp[len - 1] = 0;
+    for (p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, 0755);
+            *p = '/';
+        }
+    }
+    mkdir(tmp, 0755);
+}
+
 // Configures default settings in gta_sa.set:
-// - bInvertMouseY = 1 (inverted mouse by default)
-// - m_bPrefsFrameLimiter = 0 (frame limiter off by default)
-// - videoMode = 0 (2560x1600 primary mode)
-// - widescreen = 1 (on)
-static void ensure_default_settings(void) {
+// - bInvertMouseY = 1 (inverted mouse by default) [offset t_pos - 22]
+// - m_bWidescreenOn = 1 (widescreen on by default) [offset t_pos + 6]
+// - m_nPrefsVideoMode = 2 (2560x1600x32 video mode) [offset t_pos + 8]
+// - m_bPrefsFrameLimiter = 0 (frame limiter off by default) [offset t_pos + 14]
+// - m_nDisplayVideoMode = 2 (2560x1600x32 active video mode) [offset t_pos + 15]
+static void ensure_default_settings(const char *contents_dir) {
     const char *home = getenv("HOME");
     if (!home) return;
 
@@ -56,6 +73,16 @@ static void ensure_default_settings(void) {
     char set_file[PATH_MAX];
     snprintf(set_file, sizeof(set_file), "%s/gta_sa.set", set_dir);
 
+    // If gta_sa.set doesn't exist yet, copy bundled template from Resources
+    if (!file_exists(set_file)) {
+        char template_set[PATH_MAX];
+        snprintf(template_set, sizeof(template_set), "%s/Resources/gta_sa.set", contents_dir);
+        if (file_exists(template_set)) {
+            mkdir_p(set_dir);
+            copy_file(template_set, set_file);
+        }
+    }
+
     if (!file_exists(set_file)) return;
 
     FILE *f = fopen(set_file, "r+b");
@@ -64,7 +91,6 @@ static void ensure_default_settings(void) {
     fseek(f, 0, SEEK_END);
     long sz = ftell(f);
     if (sz >= 2900) {
-        // Read the buffer
         fseek(f, 0, SEEK_SET);
         unsigned char *data = (unsigned char *)malloc(sz);
         if (data && fread(data, 1, sz, f) == (size_t)sz) {
@@ -78,20 +104,28 @@ static void ensure_default_settings(void) {
             }
 
             if (t_pos > 30) {
-                // bInvertMouseY: offset t_pos - 22
+                // bInvertMouseY: offset t_pos - 22 (1 = Invert Mouse)
                 data[t_pos - 22] = 1;
 
-                // m_bWidescreenOn: offset t_pos + 6
+                // m_bWidescreenOn: offset t_pos + 6 (1 = On)
                 data[t_pos + 6] = 1;
 
-                // m_bPrefsFrameLimiter: offset t_pos + 7
-                data[t_pos + 7] = 0;
-
-                // m_nDisplayVideoMode: offset t_pos + 8 (4 bytes)
-                data[t_pos + 8] = 0;
+                // m_nPrefsVideoMode: offset t_pos + 8 (4 bytes)
+                // Mode 2 corresponds to 2560x1600x32 in SaifRuntime
+                data[t_pos + 8] = 2;
                 data[t_pos + 9] = 0;
                 data[t_pos + 10] = 0;
                 data[t_pos + 11] = 0;
+
+                // m_bPrefsFrameLimiter: offset t_pos + 14 (0 = Off)
+                data[t_pos + 14] = 0;
+
+                // m_nDisplayVideoMode: offset t_pos + 15 (4 bytes)
+                // Mode 2 corresponds to 2560x1600x32 in SaifRuntime
+                data[t_pos + 15] = 2;
+                data[t_pos + 16] = 0;
+                data[t_pos + 17] = 0;
+                data[t_pos + 18] = 0;
 
                 // Write back
                 fseek(f, 0, SEEK_SET);
@@ -104,19 +138,7 @@ static void ensure_default_settings(void) {
 }
 
 int main(int argc, char *argv[]) {
-    // Apply user defaults
-    // 1. Force 2560x1600 resolution
-    setenv("GTA_FORCE_RES", "2560x1600", 0);
-
-    // 2. Uncap internal 30fps engine cap
-    setenv("GTA_UNCAP", "1", 0);
-
-    // 3. Smooth VSync frame pacing with ProMotion / display refresh rate
-    setenv("GTA_VSYNC", "1", 0);
-
-    // 4. Update gta_sa.set preferences (invert mouse, frame limiter off, etc.)
-    ensure_default_settings();
-
+    // 1. Resolve application bundle paths
     char exec_path[PATH_MAX];
     uint32_t size = sizeof(exec_path);
     if (_NSGetExecutablePath(exec_path, &size) != 0) {
@@ -148,6 +170,19 @@ int main(int argc, char *argv[]) {
     char gamedata_path[PATH_MAX];
     snprintf(gamedata_path, sizeof(gamedata_path), "%s/Resources/GameData", contents_dir);
 
+    // Apply user defaults
+    // 1. Force 2560x1600 resolution
+    setenv("GTA_FORCE_RES", "2560x1600", 0);
+
+    // 2. Uncap internal 30fps engine cap
+    setenv("GTA_UNCAP", "1", 0);
+
+    // 3. Smooth VSync frame pacing with ProMotion / display refresh rate
+    setenv("GTA_VSYNC", "1", 0);
+
+    // 4. Update gta_sa.set preferences (invert mouse, frame limiter off, 2560x1600x32 video mode)
+    ensure_default_settings(contents_dir);
+
     char v10us_patch[PATH_MAX];
     snprintf(v10us_patch, sizeof(v10us_patch), "%s/Resources/gta_sa_v10us.exe", contents_dir);
 
@@ -169,6 +204,28 @@ int main(int argc, char *argv[]) {
                     rename(exe1, backup_exe);
                 }
                 copy_file(v10us_patch, exe1);
+            }
+        }
+
+        // Auto-patch default resolution in gta_sa.exe to 2560x1600 (offset 0x345762)
+        if (file_exists(exe1) && file_size(exe1) == V10_US_SIZE) {
+            FILE *exef = fopen(exe1, "r+b");
+            if (exef) {
+                if (fseek(exef, 0x345762, SEEK_SET) == 0) {
+                    unsigned char res_buf[10];
+                    if (fread(res_buf, 1, 10, exef) == 10) {
+                        // Check if 800x600 (bd 20 03 00 00 bb 58 02 00 00)
+                        if (res_buf[0] == 0xbd && res_buf[1] == 0x20 && res_buf[2] == 0x03 &&
+                            res_buf[5] == 0xbb && res_buf[6] == 0x58 && res_buf[7] == 0x02) {
+                            // Patch to 2560x1600 (bd 00 0a 00 00 bb 40 06 00 00)
+                            res_buf[1] = 0x00; res_buf[2] = 0x0a;
+                            res_buf[6] = 0x40; res_buf[7] = 0x06;
+                            fseek(exef, 0x345762, SEEK_SET);
+                            fwrite(res_buf, 1, 10, exef);
+                        }
+                    }
+                }
+                fclose(exef);
             }
         }
 
